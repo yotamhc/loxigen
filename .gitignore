@@ -7,3 +7,5 @@ local
 loxi_output
 loxigen.log
 tags
+.*.swp
+.*.swo
