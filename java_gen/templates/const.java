@@ -31,21 +31,22 @@
 
 //:: include('_autogen.java')
 
-package org.openflow.types;
+package ${package};
 
 import org.openflow.protocol.OFVersion;
 
-public enum OFType {
-//:: for i, msg in enumerate(all_messages):
-     ${msg.constant_name}(new byte[] { ${ ", ".join( [str(msg.wire_type(version)) for version in all_versions ]) } } )${ ", " if i < len(all_messages)-1 else ";" }
+public enum ${class_name} {
+//:: for i, entry in enumerate(enum.entries):
+//::     values = [ ("0x%x" % val) if val is not None else "-1" for val in entry.all_values(all_versions) ]
+     ${entry.name}(new int[] { ${ ", ".join( values) } } )${ ", " if i < len(enum.entries)-1 else ";" }
 //:: #endfor
 
-    byte[] wireTypes;
-    OFType(byte[] wireTypes) {
-        this.wireTypes = wireTypes;
+    private final int[] wireValues;
+    ${class_name}(int[] wireValues) {
+        this.wireValues = wireValues;
     }
 
-    public byte getWireType(OFVersion version) {
-        return this.wireTypes[version.getWireVersion()];
+    public int getWireValue(OFVersion version) {
+        return this.wireValues[version.getWireVersion()];
     }
 }

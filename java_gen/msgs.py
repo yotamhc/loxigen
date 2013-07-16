@@ -9,47 +9,71 @@ import py_gen.util as py_utils
 
 import java_gen.java_utils as java_utils
 from java_gen.java_model import *
-ignore_fields = ['version', 'xid', 'length', 'type' ]
+ignore_fields = ['version', 'xid', 'length' ]
 
 protected_fields = ['version', 'length']
 
 
 templates_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
+basedir = None
 
-def render_template(out, name, **context):
-    prefix = '//::(?=[ \t]|$)'
-    utils.render_template(out, name, [templates_dir], context, prefix=prefix)
+def set_basedir(pbasedir):
+    global basedir
+    basedir = pbasedir
 
-def create_message_interfaces(message_names, basedir):
-    """ Create the base interfaces for OFMessages"""
-    for msg_name in message_names:
-        msg = JavaOFMessage(msg_name)
+def render_class(clazz, template, **context):
+    context['class_name'] = clazz.name
+    context['package'] = clazz.package
 
-        filename = os.path.join(basedir, "%s.java" % msg.interface_name)
-        dirname = os.path.dirname(filename)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-
-        with open(filename, "w") as f:
-            render_template(f, "message_interface.java", msg=msg)
-
-def create_of_type_enum(message_names, basedir):
-    all_versions = [ JavaOFVersion(v) for v in of_g.target_version_list ]
-    messages =  sorted(filter(lambda msg: not msg.is_virtual and not msg.is_extension, [ JavaOFMessage(msg_name) for msg_name in message_names ]), key=lambda msg: msg.wire_type(all_versions[-1]))
-    filename = os.path.join(basedir, "../types/OFType.java")
+    filename = os.path.join(basedir, "%s/%s.java" % (clazz.package.replace(".", "/"), clazz.name))
     dirname = os.path.dirname(filename)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
+    prefix = '//::(?=[ \t]|$)'
+    print "filename: %s" % filename
     with open(filename, "w") as f:
-        render_template(f, "of_type.java", all_messages=messages, all_versions = all_versions)
+        utils.render_template(f, template, [templates_dir], context, prefix=prefix)
 
-def create_message_by_version(message_names, basedir):
+def create_of_const_enums():
+    java_model = build_java_model()
+    for enum in java_model.enums:
+        if enum.name in ["OFPort"]:
+            continue
+        render_class(clazz=enum,
+                template='const.java', enum=enum, all_versions=java_model.versions)
+
+def create_message_interfaces():
+    """ Create the base interfaces for of classes"""
+    java_model = build_java_model()
+    for interface in java_model.interfaces:
+        #if not utils.class_is_message(interface.c_name):
+        #    continue
+        render_class(clazz=interface,
+                template="message_interface.java", msg=interface)
+
+def create_message_classes():
+    java_model = build_java_model()
     """ Create the OF Messages for each version that implement the above interfaces"""
-    for msg_name in message_names:
-        msg = JavaOFMessage(msg_name)
+    for interface in java_model.interfaces:
+        if not utils.class_is_message(interface.c_name) and not utils.class_is_action(interface.c_name):
+            continue
+        for java_class in interface.versioned_classes:
+            render_class(clazz=java_class,
+                    template='message_class.java', version=java_class.version, msg=java_class,
+                    impl_class=java_class.name)
 
+def create_action_interfaces(message_names):
+    """ Create the base interfaces for Actions"""
+    for msg_name in message_names:
+        msg = JavaOFInterface(msg_name)
+        render_class(class_name="org.openflow.protocol.action.%s" % msg.interface_name,
+                    template='action_interface.java', msg=msg)
+
+
+def create_action_classes(names):
+    """ Create the OF Actions for each version that implement the above interfaces"""
+    for msg_name in names:
+        msg = JavaOFMessage(msg_name)
         for version in msg.all_versions():
-            filename = os.path.join(basedir, "%s.java" % msg.class_name_for_version(version))
-            with open(filename, "w") as f:
-                   render_template(f, "message_class.java", msg=msg, version=version,
-                            impl_class=msg.class_name_for_version(version))
+            render_class(class_name="org.openflow.protocol.action.%s" % msg.class_name_for_version(version), template='action_class.java',
+                     msg=msg, version=version, impl_class=msg.class_name_for_version(version))

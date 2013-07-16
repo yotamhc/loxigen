@@ -25,104 +25,55 @@
 //:: # EPL for the specific language governing permissions and limitations
 //:: # under the EPL.
 //::
+//:: from loxi_ir import *
 //:: import itertools
 //:: import of_g
 //:: include('_copyright.java')
 
 //:: include('_autogen.java')
 
-package org.openflow.protocol;
-import java.util.Collections;
-import java.util.List;
-import org.openflow.protocol.actions.OFAction;
-import org.openflow.protocol.instructions.OFInstruction;
-import org.openflow.protocol.match.*;
-import org.openflow.types.*;
-import org.openflow.types.*;
-import org.openflow.util.*;
-import org.openflow.exceptions.*;
-import org.jboss.netty.buffer.ChannelBuffer;
+package ${msg.package};
 
-class ${impl_class} implements ${msg.interface_name} {
-//:: if msg.is_fixed_length(version):
-    private static final int LENGTH = ${msg.min_length(version) };
+//:: include("_imports.java", msg=msg)
+
+class ${impl_class} implements ${msg.interface.name} {
+    // version: ${version}
+    private final static byte WIRE_VERSION = ${version.int_version};
+//:: if msg.is_fixed_length:
+    private final static int LENGTH = ${msg.length};
 //:: else:
-    private static final int MINIMUM_LENGTH = ${msg.min_length(version) };
+    private final static int MINIMUM_LENGTH = ${msg.min_length};
 //:: #endif
 
-//:: for prop in msg.properties_for_version(version):
+//:: for prop in msg.data_members:
     private final static ${prop.java_type.public_type} ${prop.default_name} = ${prop.default_value};
 //:: #end
-    private boolean xidSet;
-    private final int xid;
 
     // OF message fields
-//:: for prop in msg.properties_for_version(version):
+//:: for prop in msg.data_members:
     private final ${prop.java_type.public_type} ${prop.name};
 //:: #endfor
 
-    // Constructor
     ${impl_class}(${
-        ", ".join(["int xid" ] + [ "%s %s" %(prop.java_type.public_type, prop.name) for prop in msg.properties_for_version(version) ])}) {
-        this.xidSet = true;
-        this.xid = xid;
-//:: for prop in msg.properties_for_version(version):
+        ", ".join("%s %s" %(prop.java_type.public_type, prop.name) for prop in msg.data_members) }) {
+//:: for prop in msg.data_members:
         this.${prop.name} = ${prop.name};
 //:: #endfor
-    }
-
-    ${impl_class}(${
-        ", ".join("%s %s" %(prop.java_type.public_type, prop.name) for prop in msg.properties_for_version(version)) }) {
-        this.xidSet = false;
-        this.xid = 0;
-//:: for prop in msg.properties_for_version(version):
-        this.${prop.name} = ${prop.name};
-//:: #endfor
-    }
-
-    @Override
-    public int getXid() {
-        return xid;
-    }
-
-    @Override
-    public boolean isXidSet() {
-        return xidSet;
-    }
-
-    @Override
-    public OFType getType() {
-        return OFType.${msg.constant_name};
-    }
-
-    @Override
-    public OFVersion getVersion() {
-        return OFVersion.${version.constant_version};
     }
 
     // Accessors for OF message fields
-//:: for prop in msg.all_properties():
-    @Override
-    public ${prop.java_type.public_type} get${prop.title_name}()${ "" if msg.property_in_version(prop, version) else "throws UnsupportedOperationException"} {
-//:: if msg.property_in_version(prop, version):
-        return ${prop.name};
-//:: else:
-        throw new UnsupportedOperationException("Property ${prop.name} not supported in version #{version}");
-//:: #endif
-    }
-//:: #endfor
+//:: include("_field_accessors.java", msg=msg, generate_setters=False, builder=False)
 
-    public ${msg.interface_name}.Builder createBuilder() {
+
+    public ${msg.name}.Builder createBuilder() {
         return new BuilderImplWithParent(this);
     }
 
-    static class BuilderImplWithParent implements ${msg.interface_name}.Builder {
+    static class BuilderImplWithParent implements ${msg.interface.name}.Builder {
         final ${impl_class} parentMessage;
-        private boolean xidSet;
-        private int xid;
 
         // OF message fields
-//:: for prop in msg.properties_for_version(version):
+//:: for prop in msg.data_members:
         private boolean ${prop.name}Set;
         private ${prop.java_type.public_type} ${prop.name};
 //:: #endfor
@@ -131,128 +82,128 @@ class ${impl_class} implements ${msg.interface_name} {
             this.parentMessage = parentMessage;
         }
 
-//:: for prop in msg.all_properties():
+//:: include("_field_accessors.java", msg=msg, generate_setters=True, builder=True)
+
         @Override
-        public ${prop.java_type.public_type} get${prop.title_name}()${ "" if msg.property_in_version(prop, version) else " throws UnsupportedOperationException"} {
-//:: if msg.property_in_version(prop, version):
-            return ${prop.name};
-//:: else:
-            throw new UnsupportedOperationException("Property ${prop.name} not supported in version #{version}");
-//:: #endif
-        }
-        @Override
-        public ${msg.interface_name}.Builder set${prop.title_name}(${prop.java_type.public_type} ${prop.name})${ "" if msg.property_in_version(prop, version) else " throws UnsupportedOperationException"} {
-//:: if msg.property_in_version(prop, version):
-            this.${prop.name} = ${prop.name};
-            this.${prop.name}Set = true;
-            return this;
-//:: else:
-        throw new UnsupportedOperationException("Property ${prop.name} not supported in version #{version}");
-//:: #endif
-        }
-//:: #endfor
-        @Override
-        public ${msg.interface_name} getMessage() {
-            if(this.xidSet) {
-                return new ${impl_class}(
-                    ${",\n                      ".join(
-                         [ "xid" ] +
-                         [ "this.{0}Set ? this.{0} : parentMessage.{0}".format(prop.name)
-                             for prop in msg.properties_for_version(version)])}
-                    );
-            } else {
+        public ${msg.interface.name} getMessage() {
                 return new ${impl_class}(
                     ${",\n                      ".join(
                          [ "this.{0}Set ? this.{0} : parentMessage.{0}".format(prop.name)
-                             for prop in msg.properties_for_version(version)])}
+                             for prop in msg.data_members])}
                     );
-            }
         }
     }
 
-    static class BuilderImpl implements ${msg.interface_name}.Builder {
-        private boolean xidSet;
-        private int xid;
-
+    static class BuilderImpl implements ${msg.interface.name}.Builder {
         // OF message fields
-//:: for prop in msg.properties_for_version(version):
+//:: for prop in msg.data_members:
         private boolean ${prop.name}Set;
         private ${prop.java_type.public_type} ${prop.name};
 //:: #endfor
 
-//:: for prop in msg.all_properties():
+//:: include("_field_accessors.java", msg=msg, generate_setters=True, builder=True)
+//
         @Override
-        public ${prop.java_type.public_type} get${prop.title_name}()${ "" if msg.property_in_version(prop, version) else " throws UnsupportedOperationException"} {
-//:: if msg.property_in_version(prop, version):
-            return ${prop.name};
-//:: else:
-            throw new UnsupportedOperationException("Property ${prop.name} not supported in version #{version}");
-//:: #endif
-        }
-        @Override
-        public ${msg.interface_name}.Builder set${prop.title_name}(${prop.java_type.public_type} ${prop.name})${ "" if msg.property_in_version(prop, version) else " throws UnsupportedOperationException"} {
-//:: if msg.property_in_version(prop, version):
-            this.${prop.name} = ${prop.name};
-            this.${prop.name}Set = true;
-            return this;
-//:: else:
-        throw new UnsupportedOperationException("Property ${prop.name} not supported in version #{version}");
-//:: #endif
-        }
-//:: #endfor
-        @Override
-        public ${msg.interface_name} getMessage() {
-            if(this.xidSet) {
-                return new ${impl_class}(
-                    ${",\n                      ".join(
-                         [ "xid" ] +
-                         [ "this.{0}Set ? this.{0} : {1}.{2}".format(prop.name, impl_class, prop.default_name)
-                             for prop in msg.properties_for_version(version)])}
-                    );
-            } else {
-                return new ${impl_class}(
-                    ${",\n                      ".join(
-                         [ "this.{0}Set ? this.{0} : {1}.{2}".format(prop.name, impl_class, prop.default_name)
-                             for prop in msg.properties_for_version(version)])}
-                    );
-            }
+        public ${msg.interface.name} getMessage() {
+            return new ${impl_class}(
+                ${",\n                      ".join(
+                     [ "this.{0}Set ? this.{0} : {1}.{2}".format(prop.name, impl_class, prop.default_name)
+                         for prop in msg.data_members])}
+                );
         }
     }
 
     final static Reader READER = new Reader();
-    static class Reader implements OFMessageReader<${msg.interface_name}> {
+    static class Reader implements OFMessageReader<${msg.interface.name}> {
         @Override
-        public ${msg.interface_name} readFrom(ChannelBuffer bb) throws OFParseError {
-            byte version = bb.readByte();
-            if (version != (byte) ${version.int_version})
-                throw new OFParseError("Wrong version: Expected=${version.int_version}, got="+version);
-
-            byte type = bb.readByte();
-            if(type != ${msg.wire_type(version)})
-                throw new OFParseError("Wrong message type: Expected=${msg.constant_name}, got="+type);
-
-            int length = bb.readUnsignedShort();
-//:: if msg.is_fixed_length(version):
-            if(length != LENGTH)
-                throw new OFParseError("Wrong message length: Expected="+LENGTH +", got="+length);
-//:: else:
-            if(length < MINIMUM_LENGTH)
-                throw new OFParseError("Insufficient message length: minimum length="+MINIMUM_LENGTH +", got="+length);
-//:: #endif
-            int xid = bb.readInt();
-//:: for prop in msg.properties_for_version(version, skip_pads=False):
-//:: if prop.is_pad:
+        public ${msg.interface.name} readFrom(ChannelBuffer bb) throws OFParseError {
+//:: fields_with_length_member = {}
+//:: for prop in msg.members:
+//:: if prop.is_data:
+            ${prop.java_type.public_type} ${prop.name} = ${prop.java_type.read_op(version,
+                    length=fields_with_length_member[prop.c_name] if prop.c_name in fields_with_length_member else None)};
+//:: elif prop.is_pad:
             // pad: ${prop.length} bytes
             bb.skipBytes(${prop.length});
-//:: else:
+//:: elif prop.is_fixed_value:
+            // fixed value property ${prop.name} == ${prop.value}
+            ${prop.java_type.priv_type} ${prop.name} = ${prop.java_type.read_op(version)};
+            if(${prop.name} != ${prop.value})
+                throw new OFParseError("Wrong ${prop.name}: Expected=${prop.enum_value}(${prop.value}), got="+${prop.name});
+//:: elif prop.is_length_value:
             ${prop.java_type.public_type} ${prop.name} = ${prop.java_type.read_op(version)};
+            if(${prop.name} < MINIMUM_LENGTH)
+                throw new OFParseError("Wrong ${prop.name}: Expected to be >= " + MINIMUM_LENGTH + ", was: " + ${prop.name});
+//:: elif prop.is_field_length_value:
+//::        fields_with_length_member[prop.member.field_name] = prop.name
+            int ${prop.name} = ${prop.java_type.read_op(version)};
+//:: else:
+    // fixme: todo ${prop.name}
 //:: #endif
 //:: #endfor
-                return new ${impl_class}(
+            return new ${impl_class}(
                     ${",\n                      ".join(
-                         [ "xid" ] + [ prop.name for prop in msg.properties_for_version(version)])}
+                         [ prop.name for prop in msg.data_members])}
                     );
         }
     }
+
+    public int writeTo(ChannelBuffer bb) {
+        return WRITER.write(bb, this);
+    }
+
+    final static Writer WRITER = new Writer();
+    static class Writer implements OFMessageWriter<${impl_class}> {
+        @Override
+        public int write(ChannelBuffer bb, ${impl_class} message) {
+//:: if not msg.is_fixed_length:
+            int startIndex = bb.readerIndex();
+//:: #end
+
+//:: fields_with_length_member = {}
+//:: for prop in msg.members:
+//:: if prop.c_name in fields_with_length_member:
+            int ${prop.name}StartIndex = bb.writerIndex();
+//:: #endif
+//:: if prop.is_data:
+            ${prop.java_type.write_op(version, "message." + prop.name)};
+//:: elif prop.is_pad:
+            // pad: ${prop.length} bytes
+            bb.writeZero(${prop.length});
+//:: elif prop.is_fixed_value:
+            // fixed value property ${prop.name} = ${prop.value}
+            ${prop.java_type.write_op(version, prop.value)};
+//:: elif prop.is_length_value:
+            // ${prop.name} is length of variable message, will be updated at the end
+            ${prop.java_type.write_op(version, 0)};
+//:: elif prop.is_field_length_value:
+//::        fields_with_length_member[prop.member.field_name] = prop.name
+            // ${prop.name} is length indicator for ${prop.member.field_name}, will be
+            // udpated when ${prop.member.field_name} has been written
+            int ${prop.name}Index = bb.writerIndex();
+            ${prop.java_type.write_op(version, 0)};
+//:: else:
+            // FIXME: todo write ${prop.name}
+//:: #endif
+//:: if prop.c_name in fields_with_length_member:
+//::     length_member_name = fields_with_length_member[prop.c_name]
+            // update field length member ${length_member_name}
+            int ${prop.name}Length = bb.writerIndex() - ${prop.name}StartIndex;
+            bb.setShort(${length_member_name}Index, ${prop.name}Length);
+//:: #endif
+//:: #endfor
+
+//:: if msg.is_fixed_length:
+            return LENGTH;
+//:: else:
+            // update length field
+            int length = bb.writerIndex() - startIndex;
+            bb.setShort(startIndex + 2, length);
+            return length;
+//:: #end
+
+        }
+    }
+
 
 }

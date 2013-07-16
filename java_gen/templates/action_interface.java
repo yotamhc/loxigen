@@ -31,26 +31,31 @@
 
 //:: include('_autogen.java')
 
-package ${msg.package};
+package org.openflow.protocol.action;
+import java.util.List;
+import org.openflow.protocol.OFVersion;
+import org.openflow.protocol.match.*;
+import org.openflow.protocol.actions.OFAction;
+import org.openflow.protocol.instructions.OFInstruction;
+import org.openflow.types.*;
+import org.openflow.util.*;
+import org.openflow.exceptions.OFUnsupported;
 
-//:: include("_imports.java", msg=msg)
+public interface ${msg.interface_name} extends OFAction {
+    OFActionType getType();
+    OFVersion getVersion();
 
-public interface ${msg.name} ${"extends %s" % msg.parent_interface if msg.parent_interface else ""} {
-//:: for prop in (prop for prop in msg.members):
-    ${prop.java_type.public_type} get${prop.title_name}()${ "" if prop.is_universal else " throws UnsupportedOperationException"};
+//:: for prop in msg.all_properties():
+    ${prop.java_type.public_type} get${prop.title_name}()${ "" if prop.is_universal else "throws UnsupportedOperationException"};
 //:: #endfor
 
     Builder createBuilder();
 
-    int writeTo(ChannelBuffer channelBuffer);
-
-    public interface Builder ${"extends %s.Builder" % msg.parent_interface if msg.parent_interface else ""} {
-        ${msg.name} getMessage();
-//:: for prop in msg.members:
-        ${prop.java_type.public_type} get${prop.title_name}()${ "" if prop.is_universal else " throws UnsupportedOperationException"};
-//:: if prop.is_writeable:
+    public interface Builder {
+        ${msg.interface_name} getMessage();
+//:: for prop in msg.all_properties():
+        ${prop.java_type.public_type} get${prop.title_name}()${ "" if prop.is_universal else "throws UnsupportedOperationException"};
         Builder set${prop.title_name}(${prop.java_type.public_type} ${prop.name})${ "" if prop.is_universal else " throws UnsupportedOperationException"};
-//:: #endif
 //:: #endfor
 
     }
