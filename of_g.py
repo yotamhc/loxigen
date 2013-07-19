@@ -280,6 +280,7 @@ of_base_types = dict(
 #    of_counter_t = dict(bytes=8, to_w="u64_hton", from_w="u64_ntoh", use_as_rv=1,
 #                    short_name="counter"),
     of_mac_addr_t = dict(bytes=6, short_name="mac"),
+    of_ipv4_t = dict(bytes=4, short_name="ipv4"),
     of_ipv6_t = dict(bytes=16, short_name="ipv6"),
     of_port_name_t = dict(bytes=ofp_constants["OF_MAX_PORT_NAME_LEN"],
                           short_name="port_name"),

@@ -79,6 +79,7 @@ def var_name_map(m_type):
         uint16_t="val16",
         uint32_t="val32",
         uint64_t="val64",
+        of_ipv4_t="val32",
         of_port_no_t="port_no",
         of_fm_cmd_t="fm_cmd",
         of_wc_bmap_t="wc_bmap",
