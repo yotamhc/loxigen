@@ -146,6 +146,12 @@ serial_num = JType('String', size=32,
 table_name = JType('String', size=32,
         read_op = 'ChannelUtils.readFixedLengthString(bb, 32)',
         write_op = 'ChannelUtils.writeFixedLengthString(bb, $name, 32)')
+ipv4 = JType("IPv4",
+        read_op = "IPv4.readFrom(bb)",
+        write_op = "$name.writeTo(bb)")
+ipv6 = JType("IPv6",
+        read_op = "IPv6.readFrom(bb)",
+        write_op = "$name.writeTo(bb)")
 
 default_mtype_to_jtype_convert_map = {
         'uint8_t' : u8,
@@ -176,7 +182,8 @@ default_mtype_to_jtype_convert_map = {
         'of_serial_num_t': serial_num,
         'of_port_name_t': port_name,
         'of_table_name_t': table_name,
-        'of_ipv6_t': JType("IPv6"),
+        'of_ipv4_t': ipv4,
+        'of_ipv6_t': ipv6,
         'of_wc_bmap_t': JType("Wildcards")
         }
 
